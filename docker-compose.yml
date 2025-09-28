@@ -1,0 +1,223 @@
+
+services:
+
+  trino:
+    image: trinodb/trino:latest
+    container_name: trino-coordinator-container
+    ports:
+      - "8080:8080"
+    environment:
+      TZ: Europe/Moscow
+
+      # S3_ENDPOINT:    ${S3_ENDPOINT} - пишут что для AWS не надо, формируется само исходя из S3_REGION
+      S3_REGION:          ${AWS3_REGION}
+      AWS_ACCESS_KEY_ID:  ${AWS3_ACCESS_KEY}
+      AWS_SECRET_KEY:     ${AWS3_SECRET_KEY}
+
+      YS3_ACCESS_KEY: ${YS3_ACCESS_KEY}
+      YS3_SECRET_KEY: ${YS3_SECRET_KEY}
+      YS3_REGION:     ${YS3_REGION}
+      YS3_ENDPOINT:   ${YS3_ENDPOINT}
+
+    depends_on:
+      metastore-aws-service:
+        condition: service_healthy
+      metastore-yc-service:
+        condition: service_healthy
+    volumes:
+      - ./etc:/etc/trino
+    networks:
+      - trino-network
+
+# ----------------- PostgreSQL для Hive Metastore for AWS S3 -----------------------------------------------------------------------
+
+  metastore-db-aws-service:
+    image: postgres:17
+    container_name: metadb-aws
+    environment:
+      TZ:                 Europe/Moscow
+      POSTGRES_DB:        metastore
+      POSTGRES_USER:      ${HIVE_USER}
+      POSTGRES_PASSWORD:  ${HIVE_PASSWORD}
+    volumes:
+          # том metadb_aws_data хранит данные матастор-БД AWS
+      - metadb_aws_data:/var/lib/postgresql/data
+          
+      - ./postgresql/pg_hba.conf:/etc/pg_hba.conf:ro
+
+          # настройки логирования
+      - ./postgresql/postgres_aws.conf:/etc/postgresql.conf:ro
+
+          # том для логов. необходимо предварительно выполнить sudo chown -R 999:999 ./logs/pg_aws_logs
+      - ./logs/pg_aws_logs:/var/log/postgresql
+
+    command: postgres -c config_file=/etc/postgresql.conf -c hba_file=/etc/pg_hba.conf      
+
+    networks:
+      - trino-network
+    healthcheck: 
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+# ----------------- PostgreSQL для Hive Metastore for Yandex Cloud Storage -----------------------------------------------------------------------
+
+  metastore-db-yc-service:
+    image: postgres:17
+    container_name: metadb-yc
+    environment:
+      TZ:                 Europe/Moscow
+      POSTGRES_DB:        metastore
+      POSTGRES_USER:      ${HIVE_USER}
+      POSTGRES_PASSWORD:  ${HIVE_PASSWORD}
+    volumes:
+          # том metadb_aws_data хранит данные матастор-БД Yandex Cloud Storage
+      - metadb_yc_data:/var/lib/postgresql/data
+          
+      - ./postgresql/pg_hba.conf:/etc/pg_hba.conf:ro
+
+          # настройки логирования
+      - ./postgresql/postgres_yc.conf:/etc/postgresql.conf:ro
+
+          # том для логов. необходимо предварительно выполнить sudo chown -R 999:999 ./logs/pg_yc_logs
+      - ./logs/pg_yc_logs:/var/log/postgresql
+
+    command: postgres -c config_file=/etc/postgresql.conf -c hba_file=/etc/pg_hba.conf      
+
+    networks:
+      - trino-network
+    healthcheck: 
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+# --------------------------------------------------------------------------------------
+  init-metastore-db:
+    image: apache/hive:${HIVERSION}
+    container_name: init-metastore
+    environment:
+      TZ: Europe/Moscow  
+      HIVE_METASTORE_USER:      ${HIVE_USER}
+      HIVE_METASTORE_PASSWORD:  ${HIVE_PASSWORD}
+    depends_on:  
+      metastore-db-aws-service:
+        condition: service_healthy  # Ждем, пока БД не станет "healthy"    
+    volumes:
+      - ./jars/postgresql-42.7.8.jar:/opt/hive/lib/postgresql-42.7.8.jar
+      - ./initm-entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]  # ← ПОЛНОСТЬЮ СВОЙ ENTRYPOINT
+    networks:
+      - trino-network
+
+# ----------METASTORE AWS ------------------------------------------------------------------------------
+  metastore-aws-service:
+    image: apache/hive:${HIVERSION}
+    container_name: metastore_aws
+    environment:
+      TZ: Europe/Moscow    
+
+      # переменные окружения применяются в .xml
+      AWS_ACCESS_KEY_ID:        ${AWS3_ACCESS_KEY}
+      AWS_SECRET_KEY:           ${AWS3_SECRET_KEY}
+      S3_REGION:                ${AWS3_REGION}
+
+      HIVE_METASTORE_USER:      ${HIVE_USER}
+      HIVE_METASTORE_PASSWORD:  ${HIVE_PASSWORD}
+
+      # YS3_ACCESS_KEY: ${YS3_ACCESS_KEY}
+      # YS3_SECRET_KEY: ${YS3_SECRET_KEY}
+      # YS3_REGION:     ${YS3_REGION}
+      # YS3_ENDPOINT:   ${YS3_ENDPOINT}
+
+    depends_on:
+      init-metastore-db:
+        condition: service_completed_successfully
+      metastore-db-aws-service:
+        condition: service_healthy    
+    volumes:
+      - ./hive-home:/home/hive
+
+      - ./metastore/hive-aws-site.xml:/opt/hive/conf/hive-site.xml:ro
+
+            # hive-log4j2.properties параметры логирования
+      - ./hive-log4j2.properties:/opt/hive/conf/hive-log4j2.properties:ro
+
+            # реализует спецификацию JDBC (Java Database Connectivity), позволяющую разрабатывать приложения на Java, работающие с PostgreSQL.
+      - ./jars/postgresql-42.7.8.jar:/opt/hive/lib/postgresql-42.7.8.jar:ro      
+            # aws-java-sdk-bundle-1.12.765.jar средство для интеграции Java-приложений с сервисами AWS, для взаимодействия с различными компонентами инфраструктуры AWS.
+      - ./jars/aws-java-sdk-bundle-1.12.765.jar:/opt/hive/lib/aws-java-sdk-bundle-1.12.765.jar:ro 
+            # hadoop-aws-3.3.6.jar — это библиотека формата JAR (Java Archive), предназначенная для взаимодействия Hadoop с облаком Amazon Web Services (AWS). 
+            # Данная библиотека предоставляет реализацию функций для интеграции HDFS (Hadoop Distributed File System) с S3 (Simple Storage Service) и другими сервисами AWS.
+      - ./jars/hadoop-aws-3.3.6.jar:/opt/hive/lib/hadoop-aws-3.3.6.jar:ro 
+    
+      - ./metastore-entrypoint.sh:/entrypoint.sh:ro
+
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]  
+    networks:
+      - trino-network
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 6<>/dev/tcp/localhost/9083 || exec 6<>/dev/tcp/localhost/10000"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 60s      
+
+# ----------METASTORE Yandex Cloud ------------------------------------------------------------------------------
+  metastore-yc-service:
+    image: apache/hive:${HIVERSION}
+    container_name: metastore_yc
+    environment:
+      TZ: Europe/Moscow    
+
+      HIVE_METASTORE_USER:      ${HIVE_USER}
+      HIVE_METASTORE_PASSWORD:  ${HIVE_PASSWORD}
+
+      # Переменные для аутентификации S3A
+      AWS_ACCESS_KEY_ID:      ${YS3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY:  ${YS3_SECRET_KEY}  
+      AWS_REGION:             ${YS3_REGION}  
+
+    depends_on:
+      init-metastore-db:
+        condition: service_completed_successfully
+      metastore-db-yc-service:
+        condition: service_healthy    
+    volumes:
+      - ./hive-home:/home/hive
+
+      - ./metastore/hive-yc-site.xml:/opt/hive/conf/hive-site.xml
+
+            # hive-log4j2.properties параметры логирования
+      - ./hive-log4j2.properties:/opt/hive/conf/hive-log4j2.properties:ro
+
+            # реализует спецификацию JDBC (Java Database Connectivity), позволяющую разрабатывать приложения на Java, работающие с PostgreSQL.
+      - ./jars/postgresql-42.7.8.jar:/opt/hive/lib/postgresql-42.7.8.jar:ro      
+            # aws-java-sdk-bundle-1.12.765.jar средство для интеграции Java-приложений с сервисами AWS, для взаимодействия с различными компонентами инфраструктуры AWS.
+      - ./jars/aws-java-sdk-bundle-1.12.765.jar:/opt/hive/lib/aws-java-sdk-bundle-1.12.765.jar:ro 
+            # hadoop-aws-3.3.6.jar — это библиотека формата JAR (Java Archive), предназначенная для взаимодействия Hadoop с облаком Amazon Web Services (AWS). 
+            # Данная библиотека предоставляет реализацию функций для интеграции HDFS (Hadoop Distributed File System) с S3 (Simple Storage Service) и другими сервисами AWS.
+      - ./jars/hadoop-aws-3.3.6.jar:/opt/hive/lib/hadoop-aws-3.3.6.jar:ro 
+    
+      - ./metastore-entrypoint.sh:/entrypoint.sh:ro
+
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]  
+    networks:
+      - trino-network
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 6<>/dev/tcp/localhost/9083 || exec 6<>/dev/tcp/localhost/10000"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 60s      
+# -------------------------------------------------------------------------------------------
+volumes:
+  metadb_aws_data:
+  metadb_yc_data:
+
+networks:
+  trino-network:
+    driver: bridge

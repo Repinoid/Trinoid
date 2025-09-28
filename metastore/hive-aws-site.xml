@@ -1,0 +1,24 @@
+<configuration>
+  
+<!-- javax.jdo.option.ConnectionURL - это параметр конфигурации для JDO (Java Data Objects), который указывает URL (адрес) подключения к базе данных. -->
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:postgresql://metastore-db-aws-service:5432/metastore</value>
+  </property>     
+
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>org.postgresql.Driver</value>
+  </property>
+
+<!-- UserName Password of metastore-db; image: postgres -->
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hiveuser</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>hivepassword</value>
+  </property> 
+
+</configuration>

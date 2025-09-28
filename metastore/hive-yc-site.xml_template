@@ -1,0 +1,74 @@
+<configuration>
+  
+<!-- javax.jdo.option.ConnectionURL - это параметр конфигурации для JDO (Java Data Objects), который указывает URL (адрес) подключения к базе данных. -->
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:postgresql://metastore-db-yc-service:5432/metastore</value>
+  </property>     
+
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>org.postgresql.Driver</value>
+  </property>
+
+<!-- UserName Password of metastore-db; image: postgres -->
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hiveuser</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>hivepassword</value>
+  </property> 
+
+<!-- MUST -->
+  <property>
+    <name>fs.s3a.path.style.access</name>
+    <value>true</value> 
+  </property>
+
+    <!-- javax.jdo.option.ConnectionURL - это параметр конфигурации для JDO (Java Data Objects), который указывает URL (адрес) подключения к базе данных. -->
+
+  <property>
+    <name>fs.s3a.endpoint</name>
+    <value>https://storage.yandexcloud.net</value>
+  </property>
+
+  <property>
+    <name>fs.s3a.region</name>
+    <value>...............</value>
+  </property> 
+
+  <property>
+    <name>fs.s3a.access.key</name>
+    <value>...........................</value>
+  </property>
+  <property>
+    <name>fs.s3a.secret.key</name>
+    <value>.....................</value>
+  </property>
+  
+  <!-- <property>
+    <name>fs.s3a.access.key</name>
+    <value>${AWS_ACCESS_KEY_ID}</value>
+    <description>S3 access key for authentication with object storage.</description>
+  </property>
+  
+  <property>
+    <name>fs.s3a.secret.key</name>
+    <value>${AWS_SECRET_KEY}</value> 
+  </property>-->
+
+
+  <property>
+    <name>fs.s3a.impl</name>
+    <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+  </property>
+
+<!-- Указываем использовать провайдер для простых (статичных) учетных данных -->
+ <property>
+    <name>fs.s3a.aws.credentials.provider</name>
+    <value>org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider</value>
+  </property>
+
+</configuration>
