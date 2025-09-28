@@ -63,6 +63,7 @@ YS3_ENDPOINT=https://storage.yandexcloud.net
 - `wget -P ./jars https://jdbc.postgresql.org/download/postgresql-42.7.8.jar`
 
 <hr>
+
 ### Запустите контейнеры
 - ***docker compose up -d***
 ### Войдите в CLI TRINO контейнера **trino-coordinator-container**
@@ -91,6 +92,7 @@ YS3_ENDPOINT=https://storage.yandexcloud.net
 - Про **tpcds**  https://github.com/Repinoid/Trinoid/blob/main/TPCDS.md
 - Про **tpch** https://github.com/Repinoid/Trinoid/blob/main/TPCH.md
 <hr>
+
 ### Создание схемы mini в каталоге aws3_catalog 
 ```
 CREATE SCHEMA aws3_catalog.mini WITH (location = 's3a://awstrino/');
