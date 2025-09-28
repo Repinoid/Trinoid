@@ -1,4 +1,4 @@
-**Telegram @IBM2702**
+**[Telegram IBM2702](https://t.me/IBM2702)**
 
 # Развёртываем Trino & AWS S3 & Yandex Cloud Storage on Apache Hive Metastore w Postgres<hr>
 
@@ -67,7 +67,7 @@ YS3_ENDPOINT=https://storage.yandexcloud.net
 ### Запустите контейнеры
 - `docker compose up -d`
 ### Войдите в CLI TRINO контейнера **trino-coordinator-container**
-- ``docker exec -it trino-coordinator-container trino``
+- `docker exec -it trino-coordinator-container trino`
 ### Выведите список каталогов
 - *trino>* `show catalogs;`
 
@@ -180,9 +180,10 @@ trino> `select * from ys3_catalog.schematoz.tablo;`
 
 `docker compose down` удалит все контейнеры, таблицы же сохранятся на хосте<br>
 `docker compose up` всё восстановит<br>
-`docker compose down -v ` удалит и тома<br>
-Но - бакеты с файлами в S3 останутся<br>
-Восстановить из них БД и таблицы можно, но фактически вручную создавая структуру<br><br>
+`docker compose down -v ` удалит и тома, в т.ч. metastore<br><br>
+Но - **бакеты с файлами в S3 останутся**<br>
+Восстановить из них БД и таблицы в принципе можно, фактически вручную создавая структуры, хранившиеся в metastore<br>
+Оно вам не надо<br>
 
 Засим,<br>
-пишите в Телегу **@IBM2702**
+пишите в [Telegram IBM2702](https://t.me/IBM2702)
