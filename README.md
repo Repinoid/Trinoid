@@ -40,7 +40,7 @@ YS3_ENDPOINT=https://storage.yandexcloud.net
 ```
 - переименовать `hive-yc-site.xml_template` в `hive-yc-site.xml`
 
-### Для этапа разработки включено подробное логирование. Надо создать папки и назначить владельца
+### Для этапа разработки включено подробное логирование. <br>Надо создать папки и назначить владельца
 
 - `mkdir -p logs`
 - `mkdir -p logs/pg_aws_logs && sudo chown -R 999:999 logs/pg_aws_logs`
@@ -48,7 +48,7 @@ YS3_ENDPOINT=https://storage.yandexcloud.net
 
 Необходимо отметить, что конфигурация проекта ***очень*** чувствительна к версиям образов контейнеров и JAR <br>
 *Например, последняя на 28.09.2025 apache/hive версия 4.1.0 содержала критический баг*<br>
-**JAR**ы должны соответствовать друг другу, поэтому всё это хозяйство лучше сразу не менять на более свежие - **утомитесь** вылавливать ошибки<br>
+**JAR**ы должны соответствовать друг другу, поэтому всё это хозяйство лучше сразу не менять на более свежeе - **утомитесь** вылавливать ошибки<br>
 
 ### Создаем папку jars (если не существует)
 - `mkdir -p ./jars`
@@ -62,7 +62,7 @@ YS3_ENDPOINT=https://storage.yandexcloud.net
 ### Скачиваем postgresql-42.7.8.jar
 - `wget -P ./jars https://jdbc.postgresql.org/download/postgresql-42.7.8.jar`
 
-
+<hr>
 ### Запустите контейнеры
 - ***docker compose up -d***
 ### Войдите в CLI TRINO контейнера **trino-coordinator-container**
@@ -90,7 +90,7 @@ YS3_ENDPOINT=https://storage.yandexcloud.net
 ```
 - Про **tpcds**  https://github.com/Repinoid/Trinoid/blob/main/TPCDS.md
 - Про **tpch** https://github.com/Repinoid/Trinoid/blob/main/TPCH.md
-
+<hr>
 ### Создание схемы mini в каталоге aws3_catalog 
 ```
 CREATE SCHEMA aws3_catalog.mini WITH (location = 's3a://awstrino/');
@@ -174,7 +174,7 @@ trino> `select * from ys3_catalog.schematoz.tablo;`
 Структура же таблиц и прочая информация хранится в постгрес-базах Metastore<br>
 
 Через SQL запросы в Trino можно работать с S3-хранилищами как с обычными БД<br><br>
-Можно ещё и Minio подключить, но ***цель проекта - сделать рабочую конфигурацию с TRINO для AWS S3 & Yandex Cloud Storage***<hr>
+Можно ещё и Minio подключить,<br>но ***цель проекта - сделать рабочую конфигурацию с TRINO для AWS S3 & Yandex Cloud Storage***<hr>
 
 `docker compose down` удалит все контейнеры, таблицы же сохранятся на хосте<br>
 `docker compose up` всё восстановит<br>
