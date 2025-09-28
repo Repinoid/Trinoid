@@ -1,6 +1,6 @@
 **Telegram @IBM2702**
 
-# Развёртываем Trino & AWS S3 & Yandex Cloud Storage on Apache Hive Metastore w Postgres
+# Развёртываем Trino & AWS S3 & Yandex Cloud Storage on Apache Hive Metastore w Postgres<hr>
 
 ## Запускаем контейнер Trino<br> и организуем доступ к S3-хранилищам AWS и Яндекс-облаке
 Шаги:
@@ -65,9 +65,9 @@ YS3_ENDPOINT=https://storage.yandexcloud.net
 <hr>
 
 ### Запустите контейнеры
-- ***docker compose up -d***
+- `docker compose up -d`
 ### Войдите в CLI TRINO контейнера **trino-coordinator-container**
-- ***docker exec -it trino-coordinator-container trino***
+- ``docker exec -it trino-coordinator-container trino``
 ### Выведите список каталогов
 - *trino>* `show catalogs;`
 
